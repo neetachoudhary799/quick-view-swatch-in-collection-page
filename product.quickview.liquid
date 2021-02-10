@@ -1,0 +1,168 @@
+{%comment%}include in template{%endcomment%}
+{% layout none %}
+{% include 'hulkcode_common' %}<script src='https://productoption.hulkapps.com/hulkcode.js' defer='defer'></script>
+{%assign page-width='small--one-half medium-up--one-half'%}
+ {%- assign current_variant = product.selected_or_first_available_variant -%}
+  {%- assign product_image_zoom_size = '1024x1024' -%}
+  {%- assign product_image_scale = '2' -%}
+  {%- assign enable_image_zoom = section.settings.enable_image_zoom -%}
+  {%- assign compare_at_price = current_variant.compare_at_price -%}
+  {%- assign price = current_variant.price -%}
+<div id="shopify-section-product-template">
+  <div class="custom-quickview">
+    <div class="custom-page-width">
+      <div class="grid grid--uniform ">
+        <div class="grid__item {{page-width}}" id="new-product"> 
+          <section class="services-slider">
+            <div class="main-containerr">
+              <div class="product-single-imagee slider slider-main">
+                {% for image in product.images   %}
+                <img src="{{ image.src | product_img_url: 'master' }}">
+                {% endfor %}
+              </div>
+            </div>
+            <div class="nav-containerr">
+              <div class="product-thumb-imagee slider-nav">
+                {% for image in product.images %}
+                <div class="product-thumbnail-images">
+                  <img src="{{ image.src | product_img_url: '' }}" dat-newsrc="{{ image.src | product_img_url: 'master' }}">
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="grid__item {{page-width}}" id="new-product"> 
+          <h1 class="product-single__title">{{ product.title }}</h1>
+          <span class="stamped-product-reviews-badge stamped-main-badge" data-id="{{product.id}}" data-product-title="{{product.title}}" data-product-type="{{product.type}}" style="display: block;"></span>
+
+          <div class="product__price">
+            {% include 'product-price', variant: current_variant, show_vendor: section.settings.show_vendor %}
+          </div>
+          {% form 'product', product, class:form_classes, novalidate: 'novalidate', data-product-form: '' %}
+ {% unless product.has_only_default_variant %}
+              <div style="display:none;" class="product-form__controls-group">
+                {% for option in product.options_with_values %}
+                  <div class="selector-wrapper js product-form__item">
+                    <label {% if option.name == 'default' %}class="label--hidden" {% endif %}for="SingleOptionSelector-{{ forloop.index0 }}">
+                      {{ option.name }}
+                    </label>
+                    <select class="single-option-selector single-option-selector-{{ section.id }} product-form__input"
+                      id="SingleOptionSelector-{{ forloop.index0 }}"
+                      data-index="option{{ forloop.index }}"
+                    >
+                      {% for value in option.values %}
+                        <option value="{{ value | escape }}"{% if option.selected_value == value %} selected="selected"{% endif %}>{{ value }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endunless %}
+
+<!-- swatch -->
+{% if product.available and product.variants.size > 1 %}
+<div class="product_variant_swatch">
+{% for option in product.options %}
+{% include 'swatch' with option %}
+{% endfor %}
+        </div>
+{% endif %}
+<!-- end swatch -->
+ <select name="id" id="ProductSelect-{{ section.id }}" class="product-form__variants no-js">
+              {% for variant in product.variants %}
+                <option data-value="{{ variant.title }}" value="{{ variant.id }}"
+                  {%- if variant == current_variant %} selected="selected" {%- endif -%}
+                >
+                  {{ variant.title }}  {%- if variant.available == false %} - {{ 'products.product.sold_out' | t }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+  <input min="1" type="number" id="quantity" name="quantity" value="1"/>
+          <div class="quick_view_slider_cus"> <div id="hulkapps_custom_options_{{ product.id }}"> </div></div>
+          <div class="product-form__controls-group product-form__controls-group--submit">
+            <div class="add-to-cart__wrapper product-form__item product-form__item--submit
+                        {%- if section.settings.enable_payment_button %} product-form__item--payment-button {%- endif -%}
+                        {%- if product.has_only_default_variant %} product-form__item--no-variants {%- endif -%}"
+                 >
+              <button type="submit" name="add"
+                      {% unless current_variant.available %} aria-disabled="true"{% endunless %}
+                      aria-label="{% unless current_variant.available %}{{ 'products.product.sold_out' | t }}{% else %}{{ 'products.product.add_to_cart' | t }}{% endunless %}"
+                      class="btn product-form__cart-submit{% if section.settings.enable_payment_button %} btn--secondary-accent{% endif %}"
+                      data-add-to-cart>
+                <span data-add-to-cart-text>
+                  {% unless current_variant.available %}
+                  {{ 'products.product.sold_out' | t }}
+                  {% else %}
+                  {{ 'products.product.add_to_cart' | t }}
+                  {% endunless %}
+                </span>
+                <span class="hide" data-loader>
+                  {% include 'icon-spinner' %}
+                </span>
+              </button>
+              {% if section.settings.enable_payment_button %}
+              {{ form | payment_button }}
+              {% endif %}
+            </div>
+          </div>
+          {% endform %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Override default values of shop.strings for each template.
+  // Alternate product templates can change values of
+  // add to cart button, sold out, and unavailable states here.
+  theme.productStrings = {
+    addToCart: {{ 'products.product.add_to_cart' | t | json }},
+    soldOut: {{ 'products.product.sold_out' | t | json }},
+    unavailable: {{ 'products.product.unavailable' | t | json }}
+  }
+</script>
+
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org/",
+  "@type": "Product",
+  "name": {{ product.title | json }},
+  "url": {{ shop.url | append: product.url | json }},
+  {%- if product.featured_media -%}
+    {%- assign media_size = product.featured_media.preview_image.width | append: 'x' -%}
+    "image": [
+      {{ product.featured_media | img_url: media_size | prepend: "https:" | json }}
+    ],
+  {%- endif -%}
+  "description": {{ product.description | strip_html | json }},
+  {%- if current_variant.sku != blank -%}
+    "sku": {{ current_variant.sku | json }},
+  {%- endif -%}
+  "brand": {
+    "@type": "Thing",
+    "name": {{ product.vendor | json }}
+  },
+  "offers": [
+    {%- for variant in product.variants -%}
+      {
+        "@type" : "Offer",
+        {%- if variant.sku != blank -%}
+          "sku": {{ variant.sku | json }},
+        {%- endif -%}
+        "availability" : "http://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}",
+        "price" : {{ variant.price | divided_by: 100.00 | json }},
+        "priceCurrency" : {{ cart.currency.iso_code | json }},
+        "url" : {{ shop.url | append: variant.url | json }}
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  ]
+}
+</script>
+
+
+
+
